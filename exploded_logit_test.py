@@ -3,6 +3,7 @@ import torch
 import math
 
 from exploded_logit import ExplodedLogitTransformation
+from exploded_logit import ExplodedLogitLoss
 
 
 # noinspection PyTypeChecker
@@ -86,6 +87,105 @@ class ExplodedLogitTransformationTest(unittest.TestCase):
                 actual, _ = ExplodedLogitTransformation.backward(context, gradient)
                 self.assertTrue(torch.equal(actual, expected),
                                 "Wrong backward pass: [{0}, {1}]\n{2}\n{3}".format(i, j, actual, expected))
+
+
+class ExplodedLogitLossTest(unittest.TestCase):
+
+    def test_build_target_simple(self):
+        loss = ExplodedLogitLoss()
+
+        order = torch.tensor([3, 1, 2, 4], dtype=torch.long)
+        expected = torch.tensor([[0., 0., 1., 0.],
+                                 [1., 0., 0., 0.],
+                                 [0., 1., 0., 0.],
+                                 [0., 0., 0., 1.]], dtype=torch.float64)
+
+        actual = loss.build_traget(order)
+        self.assertTrue(torch.equal(actual, expected),
+                        "Building simple target matrix failed:\nActual:\n{0}\nExpected:\n{1}".format(actual, expected))
+
+    def test_build_target_batch(self):
+        loss = ExplodedLogitLoss()
+
+        order = torch.tensor([[3, 1, 2, 4],
+                              [2, 1, 3, 4],
+                              [4, 2, 3, 1]], dtype=torch.long)
+
+        expected = torch.tensor([[[0., 0., 1., 0.],
+                                 [1., 0., 0., 0.],
+                                 [0., 1., 0., 0.],
+                                 [0., 0., 0., 1.]],
+
+                                 [[0., 1., 0., 0.],
+                                  [1., 0., 0., 0.],
+                                  [0., 0., 1., 0.],
+                                  [0., 0., 0., 1.]],
+
+                                 [[0., 0., 0., 1.],
+                                  [0., 1., 0., 0.],
+                                  [0., 0., 1., 0.],
+                                  [1., 0., 0., 0.]]], dtype=torch.float64)
+
+        actual = loss.build_traget(order)
+        self.assertTrue(torch.equal(actual, expected),
+                        "Building batch target matrix failed:\nActual:\n{0}\nExpected:\n{1}".format(actual, expected))
+
+    def test_simple_forward_pass(self):
+        loss = ExplodedLogitLoss()
+
+        scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64)
+        order = torch.tensor([6, 5, 3, 4, 2, 1], dtype=torch.long)
+
+        loss_expected = torch.tensor(17.9922, dtype=torch.float64)
+        loss_actual = loss.forward(scores, order)
+        self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
+                        "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
+
+    def test_batch_forward_pass(self):
+        loss = ExplodedLogitLoss()
+
+        scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
+                               [1.2, 4.8, 0.2, 5.6, 7.4, 0.]], dtype=torch.float64)
+        order = torch.tensor([[6, 5, 3, 4, 2, 1],
+                              [6, 5, 3, 4, 2, 1]], dtype=torch.long)
+
+        loss_expected = torch.tensor(17.9922 * 2, dtype=torch.float64)
+        loss_actual = loss.forward(scores, order)
+        self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
+                        "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
+
+    def test_simple_backward_pass(self):
+        loss = ExplodedLogitLoss()
+
+        scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64, requires_grad=True)
+        order = torch.tensor([6, 5, 3, 4, 2, 1], dtype=torch.long)
+
+        loss = loss.forward(scores, order)
+        loss.backward()
+
+        grad_expected = torch.tensor([0.0604,  0.4864, -1.0052,  0.3989,  1.0611, -1.0016], dtype=torch.float64)
+        grad_actual = scores.grad
+
+        self.assertTrue(torch.allclose(grad_actual, grad_expected, atol=1e-4),
+                        "Gradient is not valid:\n{0}\n{1}".format(grad_actual, grad_expected))
+
+    def test_batch_backward_pass(self):
+        loss = ExplodedLogitLoss()
+
+        scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
+                               [1.2, 4.8, 0.2, 5.6, 7.4, 0.]], dtype=torch.float64, requires_grad=True)
+        order = torch.tensor([[6, 5, 3, 4, 2, 1],
+                              [6, 5, 3, 4, 2, 1]], dtype=torch.long)
+
+        loss = loss.forward(scores, order)
+        loss.backward()
+
+        grad_actual = scores.grad
+        grad_expected = torch.tensor([[0.0604,  0.4864, -1.0052,  0.3989,  1.0611, -1.0016]],
+                                     dtype=torch.float64).repeat(2, 1)
+
+        self.assertTrue(torch.allclose(grad_actual, grad_expected, atol=1e-4),
+                        "Gradient is not valid:\n{0}\n{1}".format(grad_actual, grad_expected))
 
 
 if __name__ == '__main__':

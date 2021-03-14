@@ -78,6 +78,26 @@ class ExplodedLogitTransformation(torch.autograd.Function):
         return mask.view(shape + (mask_size,))
 
 
+class ExplodedLogitLoss(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.loss_function = torch.nn.BCELoss(reduction='sum')
+
+    def forward(self, scores, order):
+        matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
+        soft_maxed = torch.nn.functional.softmax(matrix_of_rounds, dim=-2)
+        target = self.build_traget(order)
+        return self.loss_function.forward(soft_maxed, target)
+
+    def build_traget(self, order):
+        fold_size = math.prod(order.shape)
+        mask_size = order.shape[-1]
+        target = torch.zeros((fold_size, mask_size), dtype=torch.float64, requires_grad=False)
+        target[torch.arange(fold_size), order.flatten() - 1] = 1.
+        return target.view(order.shape + (mask_size,))
+
+
 class ExplodedLogit(torch.nn.Module):
     def __init__(self, tracks_number, features_number):
         super(ExplodedLogit, self).__init__()
