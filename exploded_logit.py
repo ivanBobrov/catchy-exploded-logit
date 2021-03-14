@@ -80,9 +80,13 @@ class ExplodedLogitTransformation(torch.autograd.Function):
 
 class ExplodedLogitLoss(torch.nn.Module):
 
-    def __init__(self):
+    def __init__(self, loss_type='bce_loss'):
         super().__init__()
-        self.loss_function = torch.nn.BCELoss(reduction='sum')
+        self.loss_type = loss_type
+        if self.loss_type == 'bce_loss':
+            self.loss_function = torch.nn.BCELoss(reduction='sum')
+        else:
+            raise ValueError("Loss type '{0}' not supported".format(self.loss_type))
 
     def forward(self, scores, order):
         matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
