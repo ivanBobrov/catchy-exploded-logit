@@ -80,21 +80,30 @@ class ExplodedLogitTransformation(torch.autograd.Function):
 
 class ExplodedLogitLoss(torch.nn.Module):
 
-    def __init__(self, loss_type='bce_loss'):
+    def __init__(self, loss_type='nll'):
         super().__init__()
         self.loss_type = loss_type
-        if self.loss_type == 'bce_loss':
+        if self.loss_type == 'bce':
             self.loss_function = torch.nn.BCELoss(reduction='sum')
+        elif self.loss_type == 'nll':
+            self.loss_function = torch.nn.CrossEntropyLoss(reduction='sum')
         else:
             raise ValueError("Loss type '{0}' not supported".format(self.loss_type))
 
     def forward(self, scores, order):
-        matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
-        soft_maxed = torch.nn.functional.softmax(matrix_of_rounds, dim=-2)
-        target = self.build_traget(order)
-        return self.loss_function.forward(soft_maxed, target)
+        if self.loss_type == 'bce':
+            matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
+            soft_maxed = torch.nn.functional.softmax(matrix_of_rounds, dim=-2)
+            target = self.build_target(order)
+            return self.loss_function.forward(soft_maxed, target)
+        if self.loss_type == 'nll':
+            matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
+            target = torch.argsort(order)
+            return self.loss_function.forward(matrix_of_rounds, target)
+        else:
+            raise ValueError("Loss type '{0}' not supported".format(self.loss_type))
 
-    def build_traget(self, order):
+    def build_target(self, order):
         fold_size = math.prod(order.shape)
         mask_size = order.shape[-1]
         target = torch.zeros((fold_size, mask_size), dtype=torch.float64, requires_grad=False)
