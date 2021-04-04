@@ -3,11 +3,13 @@ import numpy as np
 
 
 class LinearModel(torch.nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, bias=True):
         super(LinearModel, self).__init__()
-        self.linear = torch.nn.Linear(input_size, output_size)
+        self.linear = torch.nn.Linear(input_size, output_size, bias=bias)
         torch.nn.init.kaiming_normal_(self.linear.weight)
-        torch.nn.init.constant_(self.linear.bias, 0)
+
+        if bias:
+            torch.nn.init.constant_(self.linear.bias, 0)
 
     def forward(self, x):
         return self.linear(x)
