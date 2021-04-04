@@ -1,4 +1,6 @@
 /.idea
 /venv
 /target
+/notebook/runs
+.ipynb_checkpoints/
 .python-version
