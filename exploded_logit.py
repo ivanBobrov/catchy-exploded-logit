@@ -80,13 +80,13 @@ class ExplodedLogitTransformation(torch.autograd.Function):
 
 class ExplodedLogitLoss(torch.nn.Module):
 
-    def __init__(self, loss_type='nll'):
+    def __init__(self, loss_type='nll', reduction='mean'):
         super().__init__()
         self.loss_type = loss_type
         if self.loss_type == 'bce':
-            self.loss_function = torch.nn.BCELoss(reduction='mean')
+            self.loss_function = torch.nn.BCELoss(reduction=reduction)
         elif self.loss_type == 'nll':
-            self.loss_function = torch.nn.CrossEntropyLoss(reduction='mean')
+            self.loss_function = torch.nn.CrossEntropyLoss(reduction=reduction)
         else:
             raise ValueError("Loss type '{0}' not supported".format(self.loss_type))
 

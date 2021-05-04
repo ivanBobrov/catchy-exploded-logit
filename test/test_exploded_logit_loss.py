@@ -100,7 +100,7 @@ class ExplodedLogitLossTest(unittest.TestCase):
                                  [0., 1., 0., 0.],
                                  [0., 0., 0., 1.]], dtype=torch.float64)
 
-        actual = loss.build_traget(order)
+        actual = loss.build_target(order)
         self.assertTrue(torch.equal(actual, expected),
                         "Building simple target matrix failed:\nActual:\n{0}\nExpected:\n{1}".format(actual, expected))
 
@@ -126,12 +126,12 @@ class ExplodedLogitLossTest(unittest.TestCase):
                                   [0., 0., 1., 0.],
                                   [1., 0., 0., 0.]]], dtype=torch.float64)
 
-        actual = loss.build_traget(order)
+        actual = loss.build_target(order)
         self.assertTrue(torch.equal(actual, expected),
                         "Building batch target matrix failed:\nActual:\n{0}\nExpected:\n{1}".format(actual, expected))
 
     def test_simple_forward_pass(self):
-        loss = ExplodedLogitLoss()
+        loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
         scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64)
         order = torch.tensor([6, 5, 3, 4, 2, 1], dtype=torch.long)
@@ -142,7 +142,7 @@ class ExplodedLogitLossTest(unittest.TestCase):
                         "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
 
     def test_batch_forward_pass(self):
-        loss = ExplodedLogitLoss()
+        loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
         scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
                                [1.2, 4.8, 0.2, 5.6, 7.4, 0.]], dtype=torch.float64)
@@ -155,7 +155,7 @@ class ExplodedLogitLossTest(unittest.TestCase):
                         "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
 
     def test_simple_backward_pass(self):
-        loss = ExplodedLogitLoss()
+        loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
         scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64, requires_grad=True)
         order = torch.tensor([6, 5, 3, 4, 2, 1], dtype=torch.long)
@@ -170,7 +170,7 @@ class ExplodedLogitLossTest(unittest.TestCase):
                         "Gradient is not valid:\n{0}\n{1}".format(grad_actual, grad_expected))
 
     def test_batch_backward_pass(self):
-        loss = ExplodedLogitLoss()
+        loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
         scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
                                [1.2, 4.8, 0.2, 5.6, 7.4, 0.]], dtype=torch.float64, requires_grad=True)
