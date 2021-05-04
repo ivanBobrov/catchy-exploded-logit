@@ -99,6 +99,11 @@ class ExplodedLogitLoss(torch.nn.Module):
         if self.loss_type == 'nll':
             matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
             target = torch.argsort(order)
+            if len(matrix_of_rounds.shape) == 2:
+                # In case of two dimensions loss function expects first dim
+                # as mini-batch, so we need to transpose
+                return self.loss_function.forward(matrix_of_rounds.T, target)
+
             return self.loss_function.forward(matrix_of_rounds, target)
         else:
             raise ValueError("Loss type '{0}' not supported".format(self.loss_type))

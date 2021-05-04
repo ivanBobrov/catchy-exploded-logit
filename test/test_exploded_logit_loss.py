@@ -130,7 +130,7 @@ class ExplodedLogitLossTest(unittest.TestCase):
         self.assertTrue(torch.equal(actual, expected),
                         "Building batch target matrix failed:\nActual:\n{0}\nExpected:\n{1}".format(actual, expected))
 
-    def test_simple_forward_pass(self):
+    def test_simple_forward_pass_bce(self):
         loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
         scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64)
@@ -141,7 +141,18 @@ class ExplodedLogitLossTest(unittest.TestCase):
         self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
                         "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
 
-    def test_batch_forward_pass(self):
+    def test_simple_forward_pass_nll(self):
+        loss = ExplodedLogitLoss(loss_type='nll', reduction='sum')
+
+        scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64)
+        order = torch.tensor([6, 5, 3, 4, 2, 1], dtype=torch.long)
+
+        loss_expected = torch.tensor(14.0236, dtype=torch.float64)
+        loss_actual = loss.forward(scores, order)
+        self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
+                        "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
+
+    def test_batch_forward_pass_bce(self):
         loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
         scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
@@ -150,6 +161,19 @@ class ExplodedLogitLossTest(unittest.TestCase):
                               [6, 5, 3, 4, 2, 1]], dtype=torch.long)
 
         loss_expected = torch.tensor(17.9922 * 2, dtype=torch.float64)
+        loss_actual = loss.forward(scores, order)
+        self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
+                        "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
+
+    def test_batch_forward_pass_nll(self):
+        loss = ExplodedLogitLoss(loss_type='nll', reduction='sum')
+
+        scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
+                               [1.2, 4.8, 0.2, 5.6, 7.4, 0.]], dtype=torch.float64)
+        order = torch.tensor([[6, 5, 3, 4, 2, 1],
+                              [6, 5, 3, 4, 2, 1]], dtype=torch.long)
+
+        loss_expected = torch.tensor(14.0236 * 2, dtype=torch.float64)
         loss_actual = loss.forward(scores, order)
         self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
                         "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
