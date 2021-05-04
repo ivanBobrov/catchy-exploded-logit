@@ -13,7 +13,7 @@ class ExplodedLogitIntegrationTest(unittest.TestCase):
 
         dataset_size = 8000
         test_dataset_size = 1000
-        data_columns = 3
+        data_columns = 6
         competitors = 8
 
         dataset_generator = ArtificialDataset(dataset_size, competitors, data_columns, rand_eps=1e-3)
@@ -21,7 +21,7 @@ class ExplodedLogitIntegrationTest(unittest.TestCase):
 
         linear_model = LinearModel(data_columns, 1)  # number of columns to score
         optimizer = torch.optim.Adam(params=linear_model.parameters())
-        loss = ExplodedLogitLoss(loss_type='nll')
+        loss = ExplodedLogitLoss(loss_type='nll', top_n=3)
 
         for step in range(dataset_size):
             data, order = next(loader_iterator)

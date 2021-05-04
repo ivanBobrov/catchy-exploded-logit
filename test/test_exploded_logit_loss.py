@@ -152,6 +152,17 @@ class ExplodedLogitLossTest(unittest.TestCase):
         self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
                         "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
 
+    def test_simple_forward_pass_nll_top(self):
+        loss = ExplodedLogitLoss(loss_type='nll', reduction='sum', top_n=3)
+
+        scores = torch.tensor([1.2, 4.8, 0.2, 5.6, 7.4, 0.], dtype=torch.float64)
+        order = torch.tensor([6, 5, 3, 4, 2, 1], dtype=torch.long)
+
+        loss_expected = torch.tensor(13.6171, dtype=torch.float64)
+        loss_actual = loss.forward(scores, order)
+        self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
+                        "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
+
     def test_batch_forward_pass_bce(self):
         loss = ExplodedLogitLoss(loss_type='bce', reduction='sum')
 
@@ -174,6 +185,19 @@ class ExplodedLogitLossTest(unittest.TestCase):
                               [6, 5, 3, 4, 2, 1]], dtype=torch.long)
 
         loss_expected = torch.tensor(14.0236 * 2, dtype=torch.float64)
+        loss_actual = loss.forward(scores, order)
+        self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
+                        "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))
+
+    def test_batch_forward_pass_nll_top(self):
+        loss = ExplodedLogitLoss(loss_type='nll', reduction='sum', top_n=3)
+
+        scores = torch.tensor([[1.2, 4.8, 0.2, 5.6, 7.4, 0.],
+                               [1.2, 4.8, 0.2, 5.6, 7.4, 0.]], dtype=torch.float64)
+        order = torch.tensor([[6, 5, 3, 4, 2, 1],
+                              [6, 5, 3, 4, 2, 1]], dtype=torch.long)
+
+        loss_expected = torch.tensor(13.6171 * 2, dtype=torch.float64)
         loss_actual = loss.forward(scores, order)
         self.assertTrue(torch.isclose(loss_actual, loss_expected, atol=1e-4),
                         "Forward pass not valid: {0} != {1}".format(loss_actual, loss_expected))

@@ -80,9 +80,11 @@ class ExplodedLogitTransformation(torch.autograd.Function):
 
 class ExplodedLogitLoss(torch.nn.Module):
 
-    def __init__(self, loss_type='nll', reduction='mean'):
+    def __init__(self, loss_type='nll', reduction='mean', top_n=None):
         super().__init__()
         self.loss_type = loss_type
+        self.top_n = top_n
+
         if self.loss_type == 'bce':
             self.loss_function = torch.nn.BCELoss(reduction=reduction)
         elif self.loss_type == 'nll':
@@ -99,6 +101,12 @@ class ExplodedLogitLoss(torch.nn.Module):
         if self.loss_type == 'nll':
             matrix_of_rounds = ExplodedLogitTransformation.apply(scores, order)
             target = torch.argsort(order)
+
+            if self.top_n is not None:
+                # Cutting of lowest places in tournament
+                matrix_of_rounds = matrix_of_rounds[..., :self.top_n]
+                target = target[..., :self.top_n]
+
             if len(matrix_of_rounds.shape) == 2:
                 # In case of two dimensions loss function expects first dim
                 # as mini-batch, so we need to transpose
