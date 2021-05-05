@@ -74,7 +74,6 @@ class EurovisionDatasetGrouped(IterableDataset):
         return len(self.samples)
 
     def __getitem__(self, index) -> T_co:
-        # print("Get item: " + str(index))
         for i, v in enumerate(self.__iter__()):
             if i == index:
                 return v
@@ -82,7 +81,6 @@ class EurovisionDatasetGrouped(IterableDataset):
         return None
 
     def __iter__(self):
-        # print("Get iterator")
         if self.shuffle_tracks:
             self.shuffle()
 
